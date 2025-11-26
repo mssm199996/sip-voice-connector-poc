@@ -22,7 +22,7 @@ import {
 import { Construct } from 'constructs';
 
 interface VoiceConnectorResourcesProps {
-  asteriskEip: CfnEIP;
+  asteriskEip?: CfnEIP;
 }
 export class VoiceConnectorResources extends Construct {
   public readonly voiceConnector: ChimeVoiceConnector;
@@ -46,30 +46,46 @@ export class VoiceConnectorResources extends Construct {
       },
     );
 
-    const pstnVoiceConnector = new ChimeVoiceConnector(
-      this,
-      'pstnVoiceConnector',
-      {
-        termination: {
-          terminationCidrs: [`${props.asteriskEip.ref}/32`],
-          callingRegions: ['US'],
-        },
-        origination: [
-          {
-            host: props.asteriskEip.ref,
-            port: 5060,
-            protocol: Protocol.UDP,
-            priority: 1,
-            weight: 1,
+    let pstnVoiceConnector;
+
+    if (props.asteriskEip != undefined) {
+      pstnVoiceConnector = new ChimeVoiceConnector(
+        this,
+        'pstnVoiceConnector',
+        {
+          termination: {
+            terminationCidrs: [`${props.asteriskEip.ref}/32`],
+            callingRegions: ['US'],
           },
-        ],
-        encryption: false,
-        // loggingConfiguration: {
-        //   enableMediaMetricLogs: true,
-        //   enableSIPLogs: true,
-        // },
-      },
-    );
+          origination: [
+            {
+              host: props.asteriskEip.ref,
+              port: 5060,
+              protocol: Protocol.UDP,
+              priority: 1,
+              weight: 1,
+            },
+          ],
+          encryption: false,
+          loggingConfiguration: {
+            enableMediaMetricLogs: true,
+            enableSIPLogs: true,
+          },
+        },
+      );
+    } else {
+      pstnVoiceConnector = new ChimeVoiceConnector(
+        this,
+        'pstnVoiceConnector',
+        {
+          encryption: false,
+          loggingConfiguration: {
+            enableMediaMetricLogs: true,
+            enableSIPLogs: true,
+          },
+        },
+      );
+    }
 
     phoneNumber.associateWithVoiceConnector(pstnVoiceConnector);
     this.voiceConnector = pstnVoiceConnector;

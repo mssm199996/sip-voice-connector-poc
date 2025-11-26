@@ -182,7 +182,7 @@ async function createMeeting(requestId: string) {
     const meetingInfo = await chimeSdkMeetingsClient.send(
       new CreateMeetingCommand({
         ClientRequestToken: requestId,
-        MediaRegion: 'us-east-1',
+        MediaRegion: 'eu-central-1',
         ExternalMeetingId: randomUUID(),
       }),
     );

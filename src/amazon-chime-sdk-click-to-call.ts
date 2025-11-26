@@ -86,6 +86,8 @@ export class AmazonChimeSDKClickToCall extends Stack {
       new CfnOutput(this, 'asteriskSite', {
         value: distributionResources.distribution.distributionDomainName,
       });
+    } else {
+      voiceConnectorResources = new VoiceConnectorResources(this, 'VoiceConnector', {});
     }
 
     const infrastructure = new Infrastructure(this, 'Infrastructure', {
@@ -118,19 +120,19 @@ export class AmazonChimeSDKClickToCall extends Stack {
 
 const devEnv = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
-  region: 'us-east-1',
+  region: 'eu-central-1',
 };
 
 const stackProps = {
-  sshPubKey: process.env.SSH_PUB_KEY || '',
-  allowedDomain: process.env.ALLOWED_DOMAIN || '',
-  logLevel: process.env.LOG_LEVEL || 'INFO',
-  buildAsterisk: process.env.BUILD_ASTERISK || 'false',
+  sshPubKey: '',
+  allowedDomain: '',
+  logLevel: 'INFO',
+  buildAsterisk: 'false',
 };
 
 const app = new App();
 
-new AmazonChimeSDKClickToCall(app, 'AmazonChimeSDKClickToCall', {
+new AmazonChimeSDKClickToCall(app, 'Sidi-Mohammed-SIP-POC-1', {
   ...stackProps,
   env: devEnv,
 });
