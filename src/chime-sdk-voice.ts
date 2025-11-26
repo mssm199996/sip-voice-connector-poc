@@ -16,17 +16,15 @@ import {
   ChimePhoneNumber,
   PhoneProductType,
   PhoneNumberType,
-  PhoneCountry,
 } from 'cdk-amazon-chime-resources';
 
 import { Construct } from 'constructs';
 
 interface VoiceConnectorResourcesProps {
-  asteriskEip?: CfnEIP;
+  sipServerEip?: CfnEIP;
 }
 export class VoiceConnectorResources extends Construct {
   public readonly voiceConnector: ChimeVoiceConnector;
-  public readonly phoneNumber: ChimePhoneNumber;
 
   constructor(
     scope: Construct,
@@ -35,31 +33,20 @@ export class VoiceConnectorResources extends Construct {
   ) {
     super(scope, id);
 
-    const phoneNumber = new ChimePhoneNumber(
-      this,
-      'voiceConnectorPhoneNumber',
-      {
-        phoneProductType: PhoneProductType.VC,
-        phoneCountry: PhoneCountry.US,
-        phoneState: 'IL',
-        phoneNumberType: PhoneNumberType.LOCAL,
-      },
-    );
+    let voiceConnector;
 
-    let pstnVoiceConnector;
-
-    if (props.asteriskEip != undefined) {
-      pstnVoiceConnector = new ChimeVoiceConnector(
+    if (props.sipServerEip != undefined) {
+      voiceConnector = new ChimeVoiceConnector(
         this,
-        'pstnVoiceConnector',
+        'voiceConnector',
         {
           termination: {
-            terminationCidrs: [`${props.asteriskEip.ref}/32`],
+            terminationCidrs: [`${props.sipServerEip.ref}/32`],
             callingRegions: ['US'],
           },
           origination: [
             {
-              host: props.asteriskEip.ref,
+              host: props.sipServerEip.ref,
               port: 5060,
               protocol: Protocol.UDP,
               priority: 1,
@@ -74,9 +61,9 @@ export class VoiceConnectorResources extends Construct {
         },
       );
     } else {
-      pstnVoiceConnector = new ChimeVoiceConnector(
+      voiceConnector = new ChimeVoiceConnector(
         this,
-        'pstnVoiceConnector',
+        'voiceConnector',
         {
           encryption: false,
           loggingConfiguration: {
@@ -87,9 +74,7 @@ export class VoiceConnectorResources extends Construct {
       );
     }
 
-    phoneNumber.associateWithVoiceConnector(pstnVoiceConnector);
-    this.voiceConnector = pstnVoiceConnector;
-    this.phoneNumber = phoneNumber;
+    this.voiceConnector = voiceConnector;
   }
 }
 

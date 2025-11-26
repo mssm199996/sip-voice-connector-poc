@@ -23,7 +23,6 @@ const chimeSdkVoiceClient = new ChimeSDKVoiceClient(config);
 const chimeSdkMeetingsClient = new ChimeSDKMeetingsClient(config);
 
 const fromNumber = process.env.FROM_NUMBER || '';
-const voiceConnectorPhone = process.env.VOICE_CONNECTOR_PHONE || '';
 const voiceConnectorArn = process.env.VOICE_CONNECTOR_ARN || '';
 const smaId = process.env.SMA_ID || '';
 const numberToCall = process.env.NUMBER_TO_CALL || '';
@@ -143,8 +142,7 @@ async function executeDial(
   phoneAttendeeInfo: any,
   toNumber: string,
 ) {
-  const dialVC = toNumber === voiceConnectorPhone ? 'true' : 'false';
-
+  // For this case, always call VC
   const params = {
     FromPhoneNumber: fromNumber,
     SipMediaApplicationId: smaId,
@@ -158,7 +156,7 @@ async function executeDial(
       RequestedDialNumber: toNumber,
       RequestedVCArn: voiceConnectorArn,
       RequestorEmail: event.requestContext.authorizer?.claims?.email || '',
-      DialVC: dialVC,
+      DialVC: 'true',
     },
   };
 

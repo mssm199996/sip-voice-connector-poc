@@ -5,18 +5,15 @@ import { config } from 'dotenv';
 import {
   SMAResources,
   Infrastructure,
-  Cognito,
   Site,
   VPCResources,
-  ServerResources,
   VoiceConnectorResources,
-  DistributionResources,
 } from './';
 
 config();
 
 interface AmazonChimeSDKClickToCallProps extends StackProps {
-  buildAsterisk: string;
+  buildSipServer: string;
   logLevel: string;
   allowedDomain: string;
   sshPubKey: string;
@@ -31,61 +28,21 @@ export class AmazonChimeSDKClickToCall extends Stack {
     super(scope, id, props);
 
     const smaResources = new SMAResources(this, 'SMAResources');
-    const cognitoResources = new Cognito(this, 'Cognito', {
-      allowedDomain: props.allowedDomain,
-    });
 
     let voiceConnectorResources;
 
-    if (props.buildAsterisk == 'true') {
+    if (props.buildSipServer == 'true') {
       const vpcResources = new VPCResources(this, 'VPC');
-
-      const distributionResources = new DistributionResources(
-        this,
-        'DistributionResources',
-        {
-          applicationLoadBalancer: vpcResources.applicationLoadBalancer,
-        },
-      );
 
       voiceConnectorResources = new VoiceConnectorResources(
         this,
         'VoiceConnector',
         {
-          asteriskEip: vpcResources.serverEip,
+          sipServerEip: vpcResources.serverEip,
         },
       );
 
-      const serverResources = new ServerResources(this, 'Asterisk', {
-        serverEip: vpcResources.serverEip,
-        voiceConnector: voiceConnectorResources.voiceConnector,
-        phoneNumber: voiceConnectorResources.phoneNumber,
-        vpc: vpcResources.vpc,
-        voiceSecurityGroup: vpcResources.voiceSecurityGroup,
-        albSecurityGroup: vpcResources.albSecurityGroup,
-        sshSecurityGroup: vpcResources.sshSecurityGroup,
-        logLevel: props.logLevel,
-        sshPubKey: props.sshPubKey,
-        applicationLoadBalancer: vpcResources.applicationLoadBalancer,
-        distribution: distributionResources.distribution,
-        userPool: cognitoResources.userPool,
-        userPoolClient: cognitoResources.userPoolClient,
-        userPoolRegion: cognitoResources.userPoolRegion,
-        identityPool: cognitoResources.identityPool,
-      });
-      new CfnOutput(this, 'instanceId', { value: serverResources.instanceId });
-      new CfnOutput(this, 'ssmCommand', {
-        value: `aws ssm start-session --target ${serverResources.instanceId}`,
-      });
-      new CfnOutput(this, 'sshCommand', {
-        value: `ssh ubuntu@${vpcResources.serverEip.ref}`,
-      });
-      new CfnOutput(this, 'voiceConnectorPhone', {
-        value: voiceConnectorResources.phoneNumber.phoneNumber,
-      });
-      new CfnOutput(this, 'asteriskSite', {
-        value: distributionResources.distribution.distributionDomainName,
-      });
+      // TODO: Build a kamailio instance here (or launch a Docker container inside a pod inside K8S)
     } else {
       voiceConnectorResources = new VoiceConnectorResources(this, 'VoiceConnector', {});
     }
@@ -93,10 +50,6 @@ export class AmazonChimeSDKClickToCall extends Stack {
     const infrastructure = new Infrastructure(this, 'Infrastructure', {
       fromPhoneNumber: smaResources.fromNumber,
       smaId: smaResources.smaId,
-      userPool: cognitoResources.userPool,
-      ...(voiceConnectorResources?.phoneNumber && {
-        voiceConnectorPhone: voiceConnectorResources.phoneNumber,
-      }),
       ...(voiceConnectorResources?.voiceConnector && {
         voiceConnector: voiceConnectorResources.voiceConnector,
       }),
@@ -104,10 +57,6 @@ export class AmazonChimeSDKClickToCall extends Stack {
 
     const site = new Site(this, 'Site', {
       apiUrl: infrastructure.apiUrl,
-      userPool: cognitoResources.userPool,
-      userPoolClient: cognitoResources.userPoolClient,
-      userPoolRegion: cognitoResources.userPoolRegion,
-      identityPool: cognitoResources.identityPool,
     });
 
     new CfnOutput(this, 'smaNumber', { value: smaResources.fromNumber });
@@ -127,7 +76,7 @@ const stackProps = {
   sshPubKey: '',
   allowedDomain: '',
   logLevel: 'INFO',
-  buildAsterisk: 'false',
+  buildSipServer: 'false',
 };
 
 const app = new App();

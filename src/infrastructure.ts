@@ -4,10 +4,7 @@ import {
   LambdaIntegration,
   EndpointType,
   MethodLoggingLevel,
-  CognitoUserPoolsAuthorizer,
-  AuthorizationType,
 } from 'aws-cdk-lib/aws-apigateway';
-import { IUserPool } from 'aws-cdk-lib/aws-cognito';
 import {
   ManagedPolicy,
   Role,
@@ -18,7 +15,6 @@ import {
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
-  ChimePhoneNumber,
   ChimeVoiceConnector,
 } from 'cdk-amazon-chime-resources';
 import { Construct } from 'constructs';
@@ -26,8 +22,6 @@ import { Construct } from 'constructs';
 interface InfrastructureProps {
   readonly fromPhoneNumber: string;
   readonly smaId: string;
-  readonly userPool: IUserPool;
-  readonly voiceConnectorPhone?: ChimePhoneNumber;
   readonly voiceConnector?: ChimeVoiceConnector;
 }
 
@@ -64,7 +58,6 @@ export class Infrastructure extends Construct {
       environment: {
         SMA_ID: props.smaId,
         FROM_NUMBER: props.fromPhoneNumber,
-        VOICE_CONNECTOR_PHONE: props.voiceConnectorPhone?.phoneNumber || '',
         VOICE_CONNECTOR_ARN:
           `arn:aws:chime:${Stack.of(this).region}:${
             Stack.of(this).account
@@ -81,7 +74,6 @@ export class Infrastructure extends Construct {
       environment: {
         SMA_ID: props.smaId,
         FROM_NUMBER: props.fromPhoneNumber,
-        VOICE_CONNECTOR_PHONE: props.voiceConnectorPhone?.phoneNumber || '',
         VOICE_CONNECTOR_ARN:
           `arn:aws:chime:${Stack.of(this).region}:${
             Stack.of(this).account
@@ -110,8 +102,21 @@ export class Infrastructure extends Construct {
       },
     });
 
-    const auth = new CognitoUserPoolsAuthorizer(this, 'auth', {
-      cognitoUserPools: [props.userPool],
+    const apiKey = api.addApiKey('ClickToCallApiKey', {
+      apiKeyName: 'click-to-call-api-key',
+    });
+
+    const plan = api.addUsagePlan('UsagePlan', {
+      name: 'ClickToCallUsagePlan',
+      throttle: {
+        rateLimit: 100,
+        burstLimit: 20,
+      },
+    });
+
+    plan.addApiKey(apiKey);
+    plan.addApiStage({
+      stage: api.deploymentStage,
     });
 
     const dial = api.root.addResource('dial');
@@ -121,12 +126,10 @@ export class Infrastructure extends Construct {
     const updateCallIntegration = new LambdaIntegration(updateCallLambda);
 
     dial.addMethod('POST', callControlIntegration, {
-      authorizer: auth,
-      authorizationType: AuthorizationType.COGNITO,
+      apiKeyRequired: true,
     });
     update.addMethod('POST', updateCallIntegration, {
-      authorizer: auth,
-      authorizationType: AuthorizationType.COGNITO,
+      apiKeyRequired: true,
     });
 
     this.apiUrl = api.url;
