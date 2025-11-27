@@ -1,0 +1,7 @@
+POST https://e6rsz6eaw4.execute-api.eu-central-1.amazonaws.com/prod/dial
+x-api-key: YOUR_API_KEY_HERE
+
+{
+  "toNumber": "dummy-number"
+}
+###

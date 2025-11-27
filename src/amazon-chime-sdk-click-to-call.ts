@@ -68,7 +68,7 @@ export class AmazonChimeSDKClickToCall extends Stack {
 }
 
 const devEnv = {
-  account: process.env.CDK_DEFAULT_ACCOUNT,
+  account: '199626657728',
   region: 'eu-central-1',
 };
 
@@ -81,7 +81,7 @@ const stackProps = {
 
 const app = new App();
 
-new AmazonChimeSDKClickToCall(app, 'Sidi-Mohammed-SIP-POC-1', {
+new AmazonChimeSDKClickToCall(app, 'Sidi-Mohammed-SIP-POC', {
   ...stackProps,
   env: devEnv,
 });
