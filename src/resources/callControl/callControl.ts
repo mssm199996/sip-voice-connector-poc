@@ -36,6 +36,7 @@ export const handler = async (
   console.info('Body: ' + JSON.stringify(body));
 
   let toNumber = body.toNumber || numberToCall;
+  let toSipUserEmail = body.toSipUserEmail || '';
 
   if (!toNumber) {
     return {
@@ -80,10 +81,10 @@ export const handler = async (
           'phone-user',
         );
         const dialInfo = await executeDial(
-          event,
           meetingInfo,
           phoneAttendeeInfo,
           toNumber,
+          toSipUserEmail,
         );
 
         console.info('joinInfo: ' + JSON.stringify({ responseInfo, dialInfo }));
@@ -137,10 +138,10 @@ export const handler = async (
 };
 
 async function executeDial(
-  event: APIGatewayProxyEvent,
   meetingInfo: any,
   phoneAttendeeInfo: any,
   toNumber: string,
+  toSipUserEmail: string,
 ) {
   // For this case, always call VC
   const params = {
@@ -155,7 +156,7 @@ async function executeDial(
       MeetingId: meetingInfo.Meeting.MeetingId,
       RequestedDialNumber: toNumber,
       RequestedVCArn: voiceConnectorArn,
-      RequestorEmail: event.requestContext.authorizer?.claims?.email || '',
+      RequestorEmail: toSipUserEmail,
       DialVC: 'true',
     },
   };

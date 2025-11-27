@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306/tcp"
+      - "33060:33060/tcp"
+
+  kamailio:
+    image: ghcr.io/kamailio/kamailio:6.0.4-bookworm
+    container_name: kamailio
+    #depends_on:
+    #  - mysql
+    volumes:
+      - ./kamailio.cfg:/etc/kamailio/kamailio.cfg:ro
+    restart: unless-stopped
+    ports:
+      - "5060:5060/udp"
+      - "5060:5060/tcp"
+
+
+  siremis:
+    image: quintana/siremis
+    container_name: siremis
+    depends_on:
+      - kamailio
+    ports:
+      - "8080:80"
