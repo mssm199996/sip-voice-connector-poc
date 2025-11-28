@@ -14,7 +14,7 @@ const project = new awscdk.AwsCdkTypeScriptApp({
   jest: false,
   name: 'amazon-chime-sdk-click-to-call',
   workflowNodeVersion: '18.x',
-  appEntrypoint: 'amazon-chime-sdk-click-to-call.ts',
+  appEntrypoint: 'amazon-chime-sdk-sip-call.ts',
   tsconfig: {
     compilerOptions: {
       lib: ['es2020', 'dom'],

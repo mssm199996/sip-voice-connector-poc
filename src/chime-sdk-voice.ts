@@ -1,5 +1,4 @@
 import { Duration, Stack } from 'aws-cdk-lib';
-import { CfnEIP } from 'aws-cdk-lib/aws-ec2';
 import {
   ServicePrincipal,
   Role,
@@ -21,7 +20,7 @@ import {
 import { Construct } from 'constructs';
 
 interface VoiceConnectorResourcesProps {
-  sipServerEip?: CfnEIP;
+  sipServerCidrs?: string;
 }
 export class VoiceConnectorResources extends Construct {
   public readonly voiceConnector: ChimeVoiceConnector;
@@ -35,18 +34,18 @@ export class VoiceConnectorResources extends Construct {
 
     let voiceConnector;
 
-    if (props.sipServerEip != undefined) {
+    if (props.sipServerCidrs != undefined) {
       voiceConnector = new ChimeVoiceConnector(
         this,
-        'voiceConnector',
+        `${id}-voice-connector`,
         {
           termination: {
-            terminationCidrs: [`${props.sipServerEip.ref}/32`],
-            callingRegions: ['US'],
+            terminationCidrs: [`${props.sipServerCidrs}`],
+            callingRegions: ['US', 'DE', 'SE'],
           },
           origination: [
             {
-              host: props.sipServerEip.ref,
+              host: props.sipServerCidrs,
               port: 5060,
               protocol: Protocol.UDP,
               priority: 1,
@@ -62,8 +61,7 @@ export class VoiceConnectorResources extends Construct {
       );
     } else {
       voiceConnector = new ChimeVoiceConnector(
-        this,
-        'voiceConnector',
+        this, `${id}-voice-connector`,
         {
           encryption: false,
           loggingConfiguration: {
@@ -85,13 +83,14 @@ export class SMAResources extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const phoneNumber = new ChimePhoneNumber(this, 'phoneNumber', {
+    // Phone number SMA
+    const phoneNumber = new ChimePhoneNumber(this, `${id}-phone-number`, {
       phoneState: 'IL',
       phoneNumberType: PhoneNumberType.LOCAL,
       phoneProductType: PhoneProductType.SMA,
     });
 
-    const smaHandlerRole = new Role(this, 'smaHandlerRole', {
+    const smaHandlerRole = new Role(this, `${id}-lambda-role`, {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
         ['chimePolicy']: new PolicyDocument({
@@ -110,7 +109,7 @@ export class SMAResources extends Construct {
       ],
     });
 
-    const smaHandlerLambda = new NodejsFunction(this, 'smaHandlerLambda', {
+    const smaHandlerLambda = new NodejsFunction(this, `${id}-lambda`, {
       entry: 'src/resources/smaHandler/smaHandler.ts',
       handler: 'lambdaHandler',
       runtime: Runtime.NODEJS_20_X,
@@ -122,7 +121,7 @@ export class SMAResources extends Construct {
       },
     });
 
-    const sipMediaApp = new ChimeSipMediaApp(this, 'sipMediaApp', {
+    const sipMediaApp = new ChimeSipMediaApp(this, `${id}-app`, {
       region: Stack.of(this).region,
       endpoint: smaHandlerLambda.functionArn,
     });
