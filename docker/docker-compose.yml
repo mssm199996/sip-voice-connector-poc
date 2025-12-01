@@ -16,7 +16,7 @@ services:
     #depends_on:
     #  - mysql
     volumes:
-      - ./kamailio.cfg:/etc/kamailio/kamailio.cfg:ro
+      - ./kamailio.cfg:/etc/kamailio/kamailio.cfg
     restart: unless-stopped
     ports:
       - "5060:5060/udp"
