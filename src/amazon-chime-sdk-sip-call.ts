@@ -26,7 +26,6 @@ export class AmazonChimeSDKSipCall extends Stack {
     const voiceConnectorResources = new VoiceConnectorResources(this, `${id}-voice-connector`, {});
 
     const infrastructure = new Infrastructure(this, `${id}-lambdas`, {
-      fromPhoneNumber: smaResources.fromNumber,
       smaId: smaResources.smaId,
       voiceConnector: voiceConnectorResources.voiceConnector,
     });

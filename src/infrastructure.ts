@@ -20,7 +20,6 @@ import {
 import { Construct } from 'constructs';
 
 interface InfrastructureProps {
-  readonly fromPhoneNumber: string;
   readonly smaId: string;
   readonly voiceConnector: ChimeVoiceConnector;
 }
@@ -58,7 +57,6 @@ export class Infrastructure extends Construct {
       timeout: Duration.seconds(60),
       environment: {
         SMA_ID: props.smaId,
-        FROM_NUMBER: props.fromPhoneNumber,
         VOICE_CONNECTOR_ARN: `arn:aws:chime:${Stack.of(this).region}:${Stack.of(this).account}:vc/${props.voiceConnector!.voiceConnectorId}`,
       },
     });
@@ -71,7 +69,6 @@ export class Infrastructure extends Construct {
       timeout: Duration.seconds(60),
       environment: {
         SMA_ID: props.smaId,
-        FROM_NUMBER: props.fromPhoneNumber,
         VOICE_CONNECTOR_ARN: `arn:aws:chime:${Stack.of(this).region}:${Stack.of(this).account}:vc/${props.voiceConnector!.voiceConnectorId}`,
       },
     });

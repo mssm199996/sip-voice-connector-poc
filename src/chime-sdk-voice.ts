@@ -12,9 +12,7 @@ import {
   ChimeVoiceConnector,
   Protocol,
   ChimeSipMediaApp,
-  ChimePhoneNumber,
-  PhoneProductType,
-  PhoneNumberType,
+
 } from 'cdk-amazon-chime-resources';
 
 import { Construct } from 'constructs';
@@ -77,18 +75,10 @@ export class VoiceConnectorResources extends Construct {
 }
 
 export class SMAResources extends Construct {
-  public readonly fromNumber: string;
   public readonly smaId: string;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
-
-    // Phone number SMA
-    const phoneNumber = new ChimePhoneNumber(this, `${id}-phone-number`, {
-      phoneState: 'IL',
-      phoneNumberType: PhoneNumberType.LOCAL,
-      phoneProductType: PhoneProductType.SMA,
-    });
 
     const smaHandlerRole = new Role(this, `${id}-lambda-role`, {
       assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
@@ -117,7 +107,6 @@ export class SMAResources extends Construct {
       architecture: Architecture.ARM_64,
       timeout: Duration.seconds(60),
       environment: {
-        FROM_NUMBER: phoneNumber.phoneNumber,
       },
     });
 
@@ -126,7 +115,6 @@ export class SMAResources extends Construct {
       endpoint: smaHandlerLambda.functionArn,
     });
 
-    this.fromNumber = phoneNumber.phoneNumber;
     this.smaId = sipMediaApp.sipMediaAppId;
   }
 }

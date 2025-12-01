@@ -10,10 +10,6 @@ import {
 } from '@aws-sdk/client-chime-sdk-voice';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const EXCLUDE_DIAL_TO =
-  /^\+((1900)|(1976)|(1268)|(1284)|(1473)|(1649)|(1664)|(1767)|(1809)|(1829)|(1849)|(1876))(\d{7})$/;
-const INCLUDE_DIAL_TO = /^\+1[2-9]\d{2}[2-9]\d{6}$/;
-
 const AWS_REGION = process.env.AWS_REGION;
 const config = {
   region: AWS_REGION,
@@ -22,11 +18,8 @@ const config = {
 const chimeSdkVoiceClient = new ChimeSDKVoiceClient(config);
 const chimeSdkMeetingsClient = new ChimeSDKMeetingsClient(config);
 
-const fromNumber = process.env.FROM_NUMBER || '';
 const voiceConnectorArn = process.env.VOICE_CONNECTOR_ARN || '';
 const smaId = process.env.SMA_ID || '';
-const numberToCall = process.env.NUMBER_TO_CALL || '';
-
 export const handler = async (
   event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> => {
@@ -35,86 +28,50 @@ export const handler = async (
   const body = JSON.parse(event.body || '{}');
   console.info('Body: ' + JSON.stringify(body));
 
-  let toNumber = body.toNumber || numberToCall;
   let toSipUserEmail = body.toSipUserEmail || '';
 
-  if (!toNumber) {
-    return {
-      statusCode: 503,
-      body: 'Missing Number',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json',
-      },
-    };
-  }
+  const meetingInfo = await createMeeting(randomUUID());
 
-  toNumber = toNumber.replace(/\s+/g, '').replace(/[\(\)\-]/g, '');
+  if (meetingInfo) {
+    const clientAttendeeInfo = await createAttendee(
+      meetingInfo.Meeting!.MeetingId!,
+      'client-user',
+    );
 
-  if (!toNumber.startsWith('+')) {
-    toNumber = toNumber.length === 10 ? `+1${toNumber}` : `+${toNumber}`;
-  }
+    if (clientAttendeeInfo) {
+      const responseInfo = {
+        Meeting: meetingInfo.Meeting,
+        Attendee: clientAttendeeInfo.Attendee,
+      };
 
-  if (
-    !EXCLUDE_DIAL_TO.test(toNumber) ||
-    INCLUDE_DIAL_TO.test(toNumber) ||
-    toNumber === ''
-  ) {
-    const meetingInfo = await createMeeting(randomUUID());
-
-    if (meetingInfo) {
-      const clientAttendeeInfo = await createAttendee(
+      const phoneAttendeeInfo = await createAttendee(
         meetingInfo.Meeting!.MeetingId!,
-        'client-user',
+        'phone-user',
       );
 
-      if (clientAttendeeInfo) {
-        const responseInfo = {
-          Meeting: meetingInfo.Meeting,
-          Attendee: clientAttendeeInfo.Attendee,
-        };
+      // Initiate the outbound call
+      const dialInfo = await executeDial(
+        meetingInfo,
+        phoneAttendeeInfo,
+        toSipUserEmail,
+      );
 
-        const phoneAttendeeInfo = await createAttendee(
-          meetingInfo.Meeting!.MeetingId!,
-          'phone-user',
-        );
-        const dialInfo = await executeDial(
-          meetingInfo,
-          phoneAttendeeInfo,
-          toNumber,
-          toSipUserEmail,
-        );
+      console.info('joinInfo: ' + JSON.stringify({ responseInfo, dialInfo }));
 
-        console.info('joinInfo: ' + JSON.stringify({ responseInfo, dialInfo }));
-
-        return {
-          statusCode: 200,
-          body: JSON.stringify({ responseInfo, dialInfo }),
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Content-Type': 'application/json',
-          },
-        };
-      } else {
-        return {
-          statusCode: 503,
-          body: 'Error creating attendee',
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Content-Type': 'application/json',
-          },
-        };
-      }
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ responseInfo, dialInfo }),
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Content-Type': 'application/json',
+        },
+      };
     } else {
       return {
         statusCode: 503,
-        body: 'Error creating meeting',
+        body: 'Error creating attendee',
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': '*',
@@ -126,7 +83,7 @@ export const handler = async (
   } else {
     return {
       statusCode: 503,
-      body: 'Bad Number',
+      body: 'Error creating attendee',
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': '*',
@@ -139,22 +96,21 @@ export const handler = async (
 
 async function executeDial(
   meetingInfo: any,
-  phoneAttendeeInfo: any,
-  toNumber: string,
+  outboundAttendeeInfo: any,
   toSipUserEmail: string,
 ) {
   // For this case, always call VC
   const params = {
-    FromPhoneNumber: fromNumber,
+    FromPhoneNumber: '+16035550122',
     SipMediaApplicationId: smaId,
     ToPhoneNumber: '+17035550122', // Replace with your desired phone number
     SipHeaders: {
-      'X-chime-join-token': phoneAttendeeInfo.Attendee.JoinToken,
+      'X-chime-join-token': outboundAttendeeInfo.Attendee.JoinToken,
       'X-chime-meeting-id': meetingInfo.Meeting.MeetingId,
     },
     ArgumentsMap: {
       MeetingId: meetingInfo.Meeting.MeetingId,
-      RequestedDialNumber: toNumber,
+      RequestedDialNumber: '+17035550122',
       RequestedVCArn: voiceConnectorArn,
       RequestorEmail: toSipUserEmail,
       DialVC: 'true',

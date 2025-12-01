@@ -21,8 +21,6 @@ const chimeSDKMeetingClient = new ChimeSDKMeetingsClient({
   region: 'eu-central-1',
 });
 
-var fromNumber = process.env.FROM_NUMBER;
-
 export const lambdaHandler = async (
   event: SipMediaApplicationEvent,
 ): Promise<SipMediaApplicationResponse> => {
@@ -126,12 +124,8 @@ export const lambdaHandler = async (
           transactionAttributes.RequestorEmail;
         actions = [callAndBridgeVC];
       } else {
-        console.log('Bridging to PSTN');
-        callAndBridgeVC.Parameters.SipHeaders!['X-RequestorEmail'] =
-          transactionAttributes.RequestorEmail;
-        callAndBridgePSTN.Parameters.Endpoints[0].Uri =
-          transactionAttributes.RequestedDialNumber;
-        actions = [callAndBridgePSTN];
+        console.log('Bridging to VC not instructed, skipping bridging step');
+        actions = [];
       }
       break;
     default:
@@ -170,7 +164,7 @@ var callAndBridgeVC: CallAndBridgeAction = {
   Type: ActionTypes.CALL_AND_BRIDGE,
   Parameters: {
     CallTimeoutSeconds: 30,
-    CallerIdNumber: fromNumber!,
+    CallerIdNumber: '+16182800302',
     Endpoints: [
       {
         BridgeEndpointType: BridgeEndpointType.AWS,
@@ -181,18 +175,5 @@ var callAndBridgeVC: CallAndBridgeAction = {
     SipHeaders: {
       'X-RequestorEmail': '',
     },
-  },
-};
-var callAndBridgePSTN: CallAndBridgeAction = {
-  Type: ActionTypes.CALL_AND_BRIDGE,
-  Parameters: {
-    CallTimeoutSeconds: 30,
-    CallerIdNumber: fromNumber!,
-    Endpoints: [
-      {
-        BridgeEndpointType: BridgeEndpointType.PSTN,
-        Uri: '',
-      },
-    ],
   },
 };

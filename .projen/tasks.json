@@ -64,14 +64,6 @@
       "name": "compile",
       "description": "Only compile"
     },
-    "configLocal": {
-      "name": "configLocal",
-      "steps": [
-        {
-          "exec": "aws s3 cp s3://$(yarn run --silent getBucket)/config.json site/public/"
-        }
-      ]
-    },
     "default": {
       "name": "default",
       "description": "Synthesize project files",
@@ -129,14 +121,6 @@
         {
           "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools projenrc .projenrc.ts",
           "receiveArgs": true
-        }
-      ]
-    },
-    "getBucket": {
-      "name": "getBucket",
-      "steps": [
-        {
-          "exec": "aws cloudformation describe-stacks --stack-name AmazonChimeSDKClickToCall --region us-east-1 --query 'Stacks[0].Outputs[?OutputKey==`siteBucket`].OutputValue' --output text"
         }
       ]
     },
