@@ -45,6 +45,12 @@ spec:
               mountPath: /etc/kamailio/kamailio.cfg
               subPath: kamailio.cfg
               readOnly: true
+            - name: config
+              mountPath: /etc/kamailio/kamctlrc
+              subPath: kamctlrc
+              readOnly: true
+            - name: runtime-directory
+              mountPath: /var/run/kamailio
             - name: tmp
               mountPath: /tmp
           livenessProbe:
@@ -61,5 +67,7 @@ spec:
         - name: config
           configMap:
             name: kamailio-config
+        - name: runtime-directory
+          emptyDir: {}
         - name: tmp
           emptyDir: {}
