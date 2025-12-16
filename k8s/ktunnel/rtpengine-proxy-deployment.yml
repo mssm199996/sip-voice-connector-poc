@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtpengine-proxy
+  namespace: fleet-control
+  labels:
+    app: rtpengine-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rtpengine-proxy
+  template:
+    metadata:
+      labels:
+        app: rtpengine-proxy
+    spec:
+      containers:
+        - name: rtpengine-proxy
+          image: omrieival/ktunnel:v1.6.1
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          ports:
+            - name: rtp-proxy-udp
+              containerPort: 28688
+              protocol: UDP
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

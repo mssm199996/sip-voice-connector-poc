@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rtpengine-proxy
+  namespace: fleet-control
+spec:
+  type: ClusterIP
+  selector:
+    app: rtpengine-proxy
+  ports:
+    - name: rtp-proxy-udp
+      port: 28688
+      targetPort: 28688
+      protocol: UDP
+    - name: rtp-proxy-tcp
+      port: 28688
+      targetPort: 28688
+      protocol: TCP

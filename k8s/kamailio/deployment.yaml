@@ -53,16 +53,6 @@ spec:
               mountPath: /var/run/kamailio
             - name: tmp
               mountPath: /tmp
-          livenessProbe:
-            tcpSocket:
-              port: 5060
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            tcpSocket:
-              port: 5060
-            initialDelaySeconds: 5
-            periodSeconds: 5
       volumes:
         - name: config
           configMap:
