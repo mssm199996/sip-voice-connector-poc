@@ -1,8 +1,0 @@
-POST https://e6rsz6eaw4.execute-api.eu-central-1.amazonaws.com/prod/dial
-x-api-key: vWnJjGP1F69PTWyNZ67ZKdmbmn5c9XE72y40AvBi
-
-{
-  "toNumber": "+17035550122",
-  "toSipUserEmail": "84016597@127.0.0.1:60309"
-}
-###
